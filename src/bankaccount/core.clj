@@ -1,4 +1,5 @@
-(ns bankaccount.core)
+(ns bankaccount.core
+  (:gen-class))
 
 (def number-of-accounts 100)
 (def number-of-money-transfers 1000)
@@ -39,7 +40,7 @@
      (simulate-delay)
      (alter to-account + amount))
     (catch IllegalStateException _
-      (swap! pending-transactions conj @pending-transactions [amount from-account to-account]))))
+      (swap! pending-transactions conj [amount from-account to-account]))))
 
 (defn random-transactions-of-account
   [account]
@@ -62,11 +63,10 @@
 (defn do-pending-transactions
   []
   (while (not (empty? @pending-transactions))
-    (let [current-transaction (atom 0)]
-      (swap! #(do (reset! current-transaction (first %))
-                  (rest %))
-             @pending-transactions)
-      (apply transfert-money current-transaction))))
+    (let [current-transaction (atom nil)]
+      (swap! pending-transactions #(do (reset! current-transaction (first %))
+                                       (rest %)))
+      (apply transfert-money @current-transaction))))
 
 (defn compare-account-balances
   [old new]
