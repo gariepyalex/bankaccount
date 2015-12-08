@@ -39,7 +39,7 @@
      (simulate-delay)
      (alter to-account + amount))
     (catch IllegalStateException _
-      (swap! pending-transactions conj @pending-transactions [amount from-account to-account]))))
+      (swap! pending-transactions conj [amount from-account to-account]))))
 
 (defn random-transactions-of-account
   [account]
@@ -62,11 +62,9 @@
 (defn do-pending-transactions
   []
   (while (not (empty? @pending-transactions))
-    (let [current-transaction (atom 0)]
-      (swap! #(do (reset! current-transaction (first %))
-                  (rest %))
-             @pending-transactions)
-      (apply transfert-money current-transaction))))
+    (let [[current-transaction & the-rest] @pending-transactions]
+      (apply transfert-money current-transaction)
+      (reset! pending-transactions the-rest))))
 
 (defn compare-account-balances
   [old new]
