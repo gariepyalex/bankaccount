@@ -26,7 +26,7 @@
 
 ;;============================================================
 ;; Transaction
-(def pending-transactions (atom []))
+(def pending-transactions (ref []))
 
 (defn simulate-delay
   []
@@ -40,7 +40,8 @@
      (simulate-delay)
      (alter to-account + amount))
     (catch IllegalStateException _
-      (swap! pending-transactions conj [amount from-account to-account]))))
+      (dosync
+       (commute pending-transactions conj [amount from-account to-account])))))
 
 (defn random-transactions-of-account
   [account]
@@ -63,10 +64,10 @@
 (defn do-pending-transactions
   []
   (while (not (empty? @pending-transactions))
-    (let [current-transaction (atom nil)]
-      (swap! pending-transactions #(do (reset! current-transaction (first %))
-                                       (rest %)))
-      (apply transfert-money @current-transaction))))
+    (dosync
+      (let [[current-transaction & the-rest] @pending-transactions]
+        (apply transfert-money current-transaction)
+        (ref-set pending-transactions the-rest)))))
 
 (defn compare-account-balances
   [old new]
